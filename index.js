@@ -10,9 +10,6 @@ const helmet = require('helmet')
 const compression = require('compression')
 const app = express()
 
-// Middelware
-
-
 // CORS problemen oplossen
 // Frontend draait op poort '8080'
 

@@ -1,7 +1,8 @@
 const router = require('express').Router()
 const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
 const db = require('../db')
-const { registerValidation } = require('../validation')
+const { registerValidation, loginValidation } = require('../validation')
 
 
 router.post('/user/register', async (req, res) => {
@@ -12,19 +13,14 @@ router.post('/user/register', async (req, res) => {
 
   try {
     // Kijken of er al een account bestaat
-
-    /*
-      @add: Account recovery if email exist - 19/09/2019
-    */
-
     let query = 'SELECT user_email FROM public.user WHERE user_email = $1'
-    const emailFound = await db.query(query, [email])
+    const emailFound = await db.query(query, [req.body.email])
     if (emailFound.rowCount !== 0) return res.json({ message: 'Account already exists' })
 
     // Paswoord hashen en account aanmaken
-    const passwordHashed = await bcrypt.hash(password, 12)
+    const passwordHashed = await bcrypt.hash(req.body.password, 12)
     query = 'INSERT INTO public.user (user_email, user_password) VALUES ($1, $2)'
-    await db.query(query, [email, passwordHashed])
+    await db.query(query, [req.body.email, passwordHashed])
     return res.json({ message: 'Account created' })
 
   } catch (error) {
@@ -33,8 +29,26 @@ router.post('/user/register', async (req, res) => {
 })
 
 router.post('/user/login', async (req, res) => {
-  res.status(401).send({ message: 'unauthorized' })
-  const { email, password } = req.body
+
+  // Validatie van de gegevens
+  const { error } = registerValidation(req.body)
+  if (error) return res.status(400).send(error.details[0].message)
+
+  try {
+    let query = 'SELECT user_id, user_email, user_password FROM public.user WHERE user_email = $1'
+    const result = await db.query(query, [req.body.email])
+
+    // Kijken of account bestaat
+    if (result.rowCount === 0) return res.json({ message: 'Account bestaat niet' })
+
+    // Kijken of wachtwoord overeenkomt
+    const validPass = await bcrypt.compare(req.body.password, result.rows[0].user_password)
+    if (!validPass) return res.status(400).json({ message: 'Paswoord fout' })
+
+    return res.status(200).send({ message: 'logged in' })
+  } catch (error) {
+    console.log(error)
+  }
 })
 
 module.exports = router
