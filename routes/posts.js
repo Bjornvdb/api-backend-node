@@ -1,5 +1,5 @@
 const router = require('express').Router()
-const verifyToken = require('../verifyToken')
+const verifyToken = require('../middleware/verifyToken')
 
 
 router.post('/posts', verifyToken, async (req, res) => {
