@@ -31,7 +31,7 @@ router.post('/user/register', async (req, res) => {
 router.post('/user/login', async (req, res) => {
 
   // Validatie van de gegevens
-  const { error } = registerValidation(req.body)
+  const { error } = loginValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
 
   try {
@@ -45,7 +45,12 @@ router.post('/user/login', async (req, res) => {
     const validPass = await bcrypt.compare(req.body.password, result.rows[0].user_password)
     if (!validPass) return res.status(400).json({ message: 'Paswoord fout' })
 
-    return res.status(200).send({ message: 'logged in' })
+    // JWT token maken en meegeven
+
+    const token = await jwt.sign({ id: result.rows[0].user_id }, process.env.TOKEN_SECRET)
+    res.header('auth-token', token)
+    return res.status(200).send({ token })
+
   } catch (error) {
     console.log(error)
   }

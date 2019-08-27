@@ -31,10 +31,12 @@ app.use(express.json())
 // Importeren van de verschillende routes
 
 const user = require('./routes/user')
+const posts = require('./routes/posts')
 
 // Routes opzetten
 
 app.use('/api', user)
+app.use('/api', posts)
 
 // Poort gelijk stellen aan '.env' variable of 3001
 
