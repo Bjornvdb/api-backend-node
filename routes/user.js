@@ -7,6 +7,8 @@ const { registerValidation, loginValidation } = require('../validation')
 
 router.post('/user/register', async (req, res) => {
 
+  console.log(req.headers["accept-language"])
+
   // Validatie van de gegevens
   const { error } = registerValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
@@ -15,7 +17,7 @@ router.post('/user/register', async (req, res) => {
     // Kijken of er al een account bestaat
     let query = 'SELECT user_email FROM public.user WHERE user_email = $1'
     const emailFound = await db.query(query, [req.body.email])
-    if (emailFound.rowCount !== 0) return res.json({ message: 'Account already exists' })
+    if (emailFound.rowCount !== 0) return res.status(400).send('Account already exists')
 
     // Paswoord hashen en account aanmaken
     const passwordHashed = await bcrypt.hash(req.body.password, 12)
@@ -47,7 +49,7 @@ router.post('/user/login', async (req, res) => {
 
     // JWT token maken en meegeven
 
-    const token = await jwt.sign({ id: result.rows[0].user_id }, process.env.TOKEN_SECRET)
+    const token = await jwt.sign({ id: result.rows[0].user_id }, process.env.TOKEN_SECRET, { algorithm: 'HS256', expiresIn: '1h' })
     res.header('auth-token', token)
     return res.status(200).send({ token })
 
